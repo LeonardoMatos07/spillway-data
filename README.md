@@ -199,6 +199,22 @@ It prints the Markdown report and a LinkedIn post, and with `--submit` saves it 
 | Lake (S3 API) | http://localhost:8333 | `lakeadmin` / `lakesecret` |
 | Postgres | `localhost:5433`, database `warehouse` | `warehouse` / `warehouse` |
 
+### Lean scheduler (no Airflow)
+
+For a single machine (a small VPS) Airflow is more than needed: it takes about 4 GB of memory for
+what is a handful of cron jobs. `energy_pipeline.scheduler` runs the same work as the DAGs, with
+the same UTC schedules, retries and failure records (`load_run`):
+
+```bash
+docker compose -f docker-compose.lean.yml up -d     # warehouse, lake, migrate, scheduler
+python -m energy_pipeline.scheduler list            # the jobs and their schedules
+python -m energy_pipeline.scheduler run ccee_pld    # run one job now (backfills: use the CLI below)
+```
+
+A run missed while the machine was off is not replayed (the DAGs also use `catchup=False`); run it
+with `scheduler run <job>`. The Airflow setup above stays available until this one has run in
+production for a few cycles.
+
 ### Without Airflow (CLI)
 
 The steps do not depend on the orchestrator, so everything runs as a CLI against any Postgres
